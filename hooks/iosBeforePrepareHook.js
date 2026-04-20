@@ -20,6 +20,15 @@ module.exports = function(ctx) {
 function run(ctx) {
   var projectRoot = ctx.opts.projectRoot;
   var iosProjectFilePath = path.join(projectRoot, 'platforms', 'ios');
+
+  // cordova-ios 8+ ships its own App/Entitlements-Debug.plist and
+  // App/Entitlements-Release.plist — there is no {ProjectName}.entitlements
+  // file to rename. Skip in that layout; associated-domains are written by
+  // afterPrepareHook.js into the correct plists.
+  if (isCordovaIos8OrNewer(iosProjectFilePath)) {
+    return;
+  }
+
   var configXmlHelper = new ConfigXmlHelper(ctx);
   var newProjectName = configXmlHelper.getProjectName();
 
@@ -45,6 +54,17 @@ function run(ctx) {
 }
 
 // region Private API
+
+/**
+ * Detect cordova-ios 8+ project layout.
+ *
+ * @param {String} iosProjectFilePath absolute path to platforms/ios
+ * @return {Boolean} true if project uses cordova-ios 8+ entitlements layout
+ */
+function isCordovaIos8OrNewer(iosProjectFilePath) {
+  return fs.existsSync(path.join(iosProjectFilePath, 'App', 'Entitlements-Debug.plist'))
+      || fs.existsSync(path.join(iosProjectFilePath, 'App', 'Entitlements-Release.plist'));
+}
 
 /**
  * Get old name of the project.

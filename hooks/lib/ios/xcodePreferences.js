@@ -27,6 +27,14 @@ module.exports = {
 function enableAssociativeDomainsCapability(cordovaContext) {
   context = cordovaContext;
 
+  // cordova-ios 8+ already wires CODE_SIGN_ENTITLEMENTS to the correct
+  // App/Entitlements-{Debug,Release}.plist files and sets a modern deployment
+  // target. No pbxproj mutations are needed — the afterPrepareHook writes
+  // associated-domains directly into those plists.
+  if (isCordovaIos8OrNewer()) {
+    return;
+  }
+
   var projectFile = loadProjectFile();
 
   // adjust preferences
@@ -37,6 +45,18 @@ function enableAssociativeDomainsCapability(cordovaContext) {
 
   // save changes
   projectFile.write();
+}
+
+/**
+ * Detect cordova-ios 8+ project layout.
+ *
+ * @return {Boolean}
+ */
+function isCordovaIos8OrNewer() {
+  var fs = require('fs');
+  var appDir = path.join(iosPlatformPath(), 'App');
+  return fs.existsSync(path.join(appDir, 'Entitlements-Debug.plist'))
+      || fs.existsSync(path.join(appDir, 'Entitlements-Release.plist'));
 }
 
 // endregion
@@ -172,7 +192,9 @@ function loadProjectFile() {
               fs.writeFileSync(pbxPath, xcodeproj.writeSync());
                   if (Object.keys(frameworks).length === 0){
                       // If there is no framework references remain in the project, just remove this file
-                      require('shelljs').rm('-rf', frameworks_file);
+                      if (fs.existsSync(frameworks_file)) {
+                          fs.rmSync(frameworks_file, { force: true, recursive: true });
+                      }
                       return;
                   }
                   fs.writeFileSync(frameworks_file, JSON.stringify(this.frameworks, null, 4));

@@ -32,10 +32,51 @@ module.exports = {
 function generateEntitlements(cordovaContext, pluginPreferences) {
   context = cordovaContext;
 
+  if (isCordovaIos8OrNewer()) {
+    writeAssociatedDomainsForCordovaIos8(pluginPreferences);
+    return;
+  }
+
   var currentEntitlements = getEntitlementsFileContent();
   var newEntitlements = injectPreferences(currentEntitlements, pluginPreferences);
 
   saveContentToEntitlementsFile(newEntitlements);
+}
+
+/**
+ * Detect cordova-ios 8+ project layout by presence of the per-configuration
+ * entitlements plists under platforms/ios/App/.
+ *
+ * @return {Boolean}
+ */
+function isCordovaIos8OrNewer() {
+  var appDir = path.join(getProjectRoot(), 'platforms', 'ios', 'App');
+  return fs.existsSync(path.join(appDir, 'Entitlements-Debug.plist'))
+      || fs.existsSync(path.join(appDir, 'Entitlements-Release.plist'));
+}
+
+/**
+ * Inject associated-domains into cordova-ios 8's per-configuration
+ * Entitlements-{Debug,Release}.plist files, preserving other existing keys.
+ *
+ * @param {Object} pluginPreferences - list of hosts from config.xml
+ */
+function writeAssociatedDomainsForCordovaIos8(pluginPreferences) {
+  var domains = generateAssociatedDomainsContent(pluginPreferences);
+  var appDir = path.join(getProjectRoot(), 'platforms', 'ios', 'App');
+
+  ['Entitlements-Debug.plist', 'Entitlements-Release.plist'].forEach(function(name) {
+    var filePath = path.join(appDir, name);
+    var existing = {};
+    try {
+      existing = plist.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (err) {
+      // file missing or unreadable — start from empty and let mkpath/writeFile create it
+    }
+    existing[ASSOCIATED_DOMAINS] = domains;
+    mkpath.sync(path.dirname(filePath));
+    fs.writeFileSync(filePath, plist.build(existing), 'utf8');
+  });
 }
 
 // endregion
