@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<plugin id="cordova-plugin-deeplinks" version="1.2.1" xmlns="http://apache.org/cordova/ns/plugins/1.0">
+<plugin id="cordova-plugin-deeplinks" version="1.2.2" xmlns="http://apache.org/cordova/ns/plugins/1.0">
 
   <name>Cordova Deeplinks Plugin</name>
   <description>
@@ -14,7 +14,7 @@
   <issue>https://github.com/e-imaxina/cordova-plugin-deeplinks/issues</issue>
 
   <engines>
-    <engine name="cordova-ios" version=">=3.8"></engine>
+    <engine name="cordova-ios" version=">=8.0.0"></engine>
     <engine name="cordova-android" version=">=4"></engine>
   </engines>
 
